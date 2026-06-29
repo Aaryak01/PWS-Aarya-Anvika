@@ -22,21 +22,41 @@ df3 = df3.rename(columns={
 # Stack all three
 merged = pd.concat([df1, df2, df3], ignore_index=True)
 
-# Clean
+# Remove duplicates
 merged = merged.drop_duplicates()
-merged['risklevel'] = merged['risklevel'].str.strip().str.lower()
 
+# FIX: Standardize risk level labels (was the main issue)
+merged['risklevel'] = merged['risklevel'].str.strip().str.lower()
+merged['risklevel'] = merged['risklevel'].replace({
+    'low risk': 'low',
+    'high risk': 'high',
+    'mid risk': 'mid'
+})
+
+# Convert numeric columns
 numeric_cols = ['age', 'systolicbp', 'diastolicbp', 'bs', 'bodytemp', 'heartrate']
 for col in numeric_cols:
     if col in merged.columns:
         merged[col] = pd.to_numeric(merged[col], errors='coerce')
 
+# FIX: Remove obvious outliers
+merged = merged[merged['age'].between(10, 60)]
+merged = merged[merged['heartrate'] >= 30]
+merged = merged[merged['diastolicbp'] <= 120]
+
+# Remove biologically impossible BMI value
+merged = merged[merged['bmi'] != 0.0]
+
+# Drop rows missing the essentials
 merged = merged.dropna(subset=['age', 'systolicbp', 'risklevel'])
 
-# Fill empty cells with NULL so it's clear in Excel
-merged = merged.fillna("NULL")
-
+# Keep NaN as actual NaN (not the string "NULL") — models handle NaN properly
 # Export
 merged.to_excel("merged_maternal_clean.xlsx", index=False)
+
 print("Done! Total rows:", len(merged))
 print("Columns:", merged.columns.tolist())
+print("\nRisk level counts:")
+print(merged['risklevel'].value_counts())
+print("\nMissing values:")
+print(merged.isnull().sum())
