@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import joblib
 
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -106,6 +107,7 @@ print(f"  Mean CV accuracy     : {cv_scores.mean():.4f} (+/- {cv_scores.std():.4
 print("\nTraining Random Forest (+ SMOTE)...")
 model.fit(X_train, y_train)
 print("Training Complete!")
+joblib.dump(model, 'rf_model.pkl')
 
 # ==================================================
 # PREDICT
